@@ -28,11 +28,11 @@ import java.util.Date
 import java.util.Locale
 
 class ChatAdapter(
-    private val messages: MutableList<ChatMessage>,
     private val onTechSelected: (ChatMessage, TechStack) -> Unit,
     private val onFeaturesSelected: (ChatMessage, List<String>) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
+    val messages = mutableListOf<ChatMessage>()
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     companion object {
@@ -42,6 +42,27 @@ class ChatAdapter(
         private const val TYPE_BOT_FEATURE_CHOICE = 4
         private const val TYPE_BOT_GENERATING = 5
         private const val TYPE_BOT_FINAL_PROMPT = 6
+    }
+
+    fun setMessages(newMessages: List<ChatMessage>) {
+        messages.clear()
+        messages.addAll(newMessages)
+        notifyDataSetChanged()
+    }
+
+    fun addMessage(message: ChatMessage) {
+        messages.add(message)
+        notifyItemInserted(messages.size - 1)
+    }
+
+    fun removeLastIfGenerating(): Boolean {
+        if (messages.isNotEmpty() && messages.last().type == MessageType.BOT_GENERATING) {
+            val idx = messages.size - 1
+            messages.removeAt(idx)
+            notifyItemRemoved(idx)
+            return true
+        }
+        return false
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -75,7 +96,7 @@ class ChatAdapter(
             is BotTextViewHolder -> holder.bind(message)
             is TechChoiceViewHolder -> holder.bind(message)
             is FeatureChoiceViewHolder -> holder.bind(message)
-            is GeneratingViewHolder -> { /* animated indicator */ }
+            is GeneratingViewHolder -> { /* pulse animation */ }
             is FinalPromptViewHolder -> holder.bind(message)
         }
     }
@@ -127,20 +148,21 @@ class ChatAdapter(
                 tvLabel.text = "${stack.iconEmoji} ${stack.name}"
                 val isSelected = stack.id.equals(item.selectedTechStack, ignoreCase = true)
 
-                if (isSelected) {
-                    chipView.setBackgroundResource(R.drawable.bg_chip_selected)
-                    tvLabel.setTextColor(ContextCompat.getColor(context, R.color.chip_selected_text))
-                    ivCheck.visibility = View.VISIBLE
-                } else {
-                    chipView.setBackgroundResource(R.drawable.bg_chip_unselected)
-                    tvLabel.setTextColor(ContextCompat.getColor(context, R.color.text_primary))
-                    ivCheck.visibility = View.GONE
-                }
+                updateChipView(chipView, tvLabel, ivCheck, isSelected)
 
                 if (!item.isSubmitted) {
                     chipView.setOnClickListener {
                         item.selectedTechStack = stack.id
-                        bind(item)
+                        val currentSelected = TechStack.findById(stack.id)
+                        btnContinue.text = "Continue with ${currentSelected.name} ➔"
+
+                        for (i in 0 until layoutChips.childCount) {
+                            val child = layoutChips.getChildAt(i)
+                            val cLabel = child.findViewById<TextView>(R.id.tvChipLabel)
+                            val cCheck = child.findViewById<View>(R.id.ivChipCheck)
+                            val s = TechStack.ALL[i]
+                            updateChipView(child, cLabel, cCheck, s.id.equals(item.selectedTechStack, ignoreCase = true))
+                        }
                     }
                 } else {
                     chipView.isClickable = false
@@ -159,8 +181,22 @@ class ChatAdapter(
                 btnContinue.setOnClickListener {
                     item.isSubmitted = true
                     btnContinue.visibility = View.GONE
-                    onTechSelected(item, currentSelected)
+                    val chosen = TechStack.findById(item.selectedTechStack ?: "flutter")
+                    onTechSelected(item, chosen)
                 }
+            }
+        }
+
+        private fun updateChipView(view: View, label: TextView, check: View, selected: Boolean) {
+            val ctx = view.context
+            if (selected) {
+                view.setBackgroundResource(R.drawable.bg_chip_selected)
+                label.setTextColor(ContextCompat.getColor(ctx, R.color.chip_selected_text))
+                check.visibility = View.VISIBLE
+            } else {
+                view.setBackgroundResource(R.drawable.bg_chip_unselected)
+                label.setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
+                check.visibility = View.GONE
             }
         }
     }
@@ -187,7 +223,6 @@ class ChatAdapter(
             }
 
             tvStatus.text = "${item.featureIds.size} features selected"
-
             layoutChips.removeAllViews()
 
             allFeatures.forEach { feat ->
@@ -223,12 +258,18 @@ class ChatAdapter(
                 btnSelectAll.setOnClickListener {
                     item.featureIds.clear()
                     item.featureIds.addAll(allFeatures.map { it.id })
-                    bind(item)
+                    for (i in 0 until layoutChips.childCount) {
+                        (layoutChips.getChildAt(i) as? CheckBox)?.isChecked = true
+                    }
+                    tvStatus.text = "${item.featureIds.size} features selected"
                 }
 
                 btnClear.setOnClickListener {
                     item.featureIds.clear()
-                    bind(item)
+                    for (i in 0 until layoutChips.childCount) {
+                        (layoutChips.getChildAt(i) as? CheckBox)?.isChecked = false
+                    }
+                    tvStatus.text = "0 features selected"
                 }
 
                 btnSubmit.setOnClickListener {

@@ -3,6 +3,7 @@ package com.sunleycoder.masterpromptgenerator.ui
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -51,6 +52,11 @@ class ChatActivity : AppCompatActivity() {
         loadOrCreateSession()
     }
 
+    override fun onResume() {
+        super.onResume()
+        binding.tvChatSubtitle.text = "Active: ${prefs.activeProvider.displayName}"
+    }
+
     private fun setupUI() {
         binding.btnChatBack.setOnClickListener {
             finish()
@@ -67,17 +73,29 @@ class ChatActivity : AppCompatActivity() {
         binding.tvChatSubtitle.text = "Active: ${prefs.activeProvider.displayName}"
 
         binding.btnChatSend.setOnClickListener {
-            val text = binding.etChatMessageInput.text.toString().trim()
-            if (text.isNotBlank()) {
-                handleUserSend(text)
-                binding.etChatMessageInput.text.clear()
+            sendMessageFromInput()
+        }
+
+        binding.etChatMessageInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEND) {
+                sendMessageFromInput()
+                true
+            } else {
+                false
             }
+        }
+    }
+
+    private fun sendMessageFromInput() {
+        val text = binding.etChatMessageInput.text.toString().trim()
+        if (text.isNotBlank()) {
+            binding.etChatMessageInput.text.clear()
+            handleUserSend(text)
         }
     }
 
     private fun setupChatList() {
         chatAdapter = ChatAdapter(
-            messages = currentSession.messages,
             onTechSelected = { message, stack ->
                 handleTechStackSelected(stack)
             },
@@ -120,19 +138,14 @@ class ChatActivity : AppCompatActivity() {
             if (loaded != null) {
                 currentSession = loaded
                 binding.tvChatTitle.text = currentSession.title
-                chatAdapter = ChatAdapter(
-                    messages = currentSession.messages,
-                    onTechSelected = { _, stack -> handleTechStackSelected(stack) },
-                    onFeaturesSelected = { _, featIds -> handleFeaturesSelected(featIds) }
-                )
-                binding.rvChatMessages.adapter = chatAdapter
+                chatAdapter.setMessages(currentSession.messages)
                 binding.scrollStarterChips.visibility = View.GONE
                 scrollToBottom()
                 return
             }
         }
 
-        // Start fresh
+        // Fresh chat
         startNewChat()
 
         if (!initialIdea.isNullOrBlank()) {
@@ -146,63 +159,60 @@ class ChatActivity : AppCompatActivity() {
             currentStep = 0
         )
 
-        currentSession.messages.clear()
         val welcomeMsg = ChatMessage(
             type = MessageType.BOT_TEXT,
-            text = "👋 **Welcome to Master Prompt Generator!**\n\nDescribe what app or game idea you want to build (e.g. *'मुझे टूर्नामेंट ऐप के लिए प्रॉम्प्ट लिखो'* or *'Build an E-Commerce store'*). I will ask you questions step-by-step and craft a production-grade master prompt for Claude, ChatGPT, and Gemini!"
+            text = "👋 **Welcome to Master Prompt AI Studio!**\n\nDescribe what application or game you want to build (e.g. *'मुझे टूर्नामेंट ऐप के लिए प्रॉम्प्ट लिखो'* or *'Build an E-Commerce store'*). I will ask you questions step-by-step and craft a production-grade master prompt!"
         )
         currentSession.messages.add(welcomeMsg)
 
-        chatAdapter.notifyDataSetChanged()
+        chatAdapter.setMessages(currentSession.messages)
         binding.scrollStarterChips.visibility = View.VISIBLE
         binding.tvChatTitle.text = "New Prompt Chat"
         scrollToBottom()
+        saveSession()
+    }
+
+    private fun addMessageToChat(msg: ChatMessage) {
+        currentSession.messages.add(msg)
+        chatAdapter.addMessage(msg)
+        scrollToBottom()
+        saveSession()
     }
 
     private fun handleUserSend(text: String) {
         binding.scrollStarterChips.visibility = View.GONE
 
-        // Add user message
+        // 1. Add user message
         val userMsg = ChatMessage(type = MessageType.USER, text = text)
-        currentSession.messages.add(userMsg)
-        val userPos = currentSession.messages.size - 1
-        chatAdapter.notifyItemInserted(userPos)
-        scrollToBottom()
+        addMessageToChat(userMsg)
 
         when (currentSession.currentStep) {
             0 -> {
-                // Step 0: User just provided the app idea
+                // Step 0: User gave the app idea
                 currentSession.appIdea = text
                 currentSession.title = generateShortTitle(text)
                 binding.tvChatTitle.text = currentSession.title
                 currentSession.currentStep = 1
 
                 lifecycleScope.launch {
-                    delay(300)
-                    // Ask Question 1: Tech Stack
+                    delay(350)
                     val botQuestion1 = ChatMessage(
                         type = MessageType.BOT_TECH_STACK_CHOICE,
                         text = "Awesome! **\"$text\"** badhiya idea hai! Chalo iske liye ek detailed master prompt banate hain.\n\nPehle yeh batao kis technology stack me banayi jayegi?",
                         appIdea = text
                     )
-                    currentSession.messages.add(botQuestion1)
-                    chatAdapter.notifyItemInserted(currentSession.messages.size - 1)
-                    scrollToBottom()
-                    saveSession()
+                    addMessageToChat(botQuestion1)
                 }
             }
             1 -> {
-                // User replied with text instead of chip
                 val matchedStack = TechStack.ALL.find { text.contains(it.name, ignoreCase = true) || text.contains(it.id, ignoreCase = true) }
                     ?: TechStack.findById("flutter")
                 handleTechStackSelected(matchedStack)
             }
             2 -> {
-                // User replied with text during features step
                 handleFeaturesSelected(listOf("auth", "tournament", "payments", "live_updates", "chat", "user_profile"))
             }
             else -> {
-                // Step 3+: Follow-up chat refinement
                 handleFollowUpChat(text)
             }
         }
@@ -212,27 +222,20 @@ class ChatActivity : AppCompatActivity() {
         currentSession.techStack = stack.name
         currentSession.currentStep = 2
 
-        // Add User's selection confirmation bubble
         val userChoiceMsg = ChatMessage(
             type = MessageType.USER,
             text = "I choose ${stack.iconEmoji} **${stack.name}**"
         )
-        currentSession.messages.add(userChoiceMsg)
-        chatAdapter.notifyItemInserted(currentSession.messages.size - 1)
-        scrollToBottom()
+        addMessageToChat(userChoiceMsg)
 
         lifecycleScope.launch {
-            delay(400)
-            // Ask Question 2: Features Multi-select
+            delay(350)
             val botQuestion2 = ChatMessage(
                 type = MessageType.BOT_FEATURE_CHOICE,
                 text = "Great! **${stack.name}** kaafi powerful framework hai.\n\nAb yeh batao kaun-kaun se features hone chahiye? (Multi-select options)",
                 selectedTechStack = stack.id
             )
-            currentSession.messages.add(botQuestion2)
-            chatAdapter.notifyItemInserted(currentSession.messages.size - 1)
-            scrollToBottom()
-            saveSession()
+            addMessageToChat(botQuestion2)
         }
     }
 
@@ -243,24 +246,17 @@ class ChatActivity : AppCompatActivity() {
         currentSession.features.addAll(featureNames)
         currentSession.currentStep = 3
 
-        // Add User's selection confirmation bubble
         val userFeatMsg = ChatMessage(
             type = MessageType.USER,
             text = "Selected Features:\n" + featureNames.joinToString("\n• ", prefix = "• ")
         )
-        currentSession.messages.add(userFeatMsg)
-        chatAdapter.notifyItemInserted(currentSession.messages.size - 1)
-        scrollToBottom()
+        addMessageToChat(userFeatMsg)
 
-        // Bot Thinking animation
         val thinkingMsg = ChatMessage(
             type = MessageType.BOT_GENERATING,
             text = "Thinking and generating your production master prompt..."
         )
-        currentSession.messages.add(thinkingMsg)
-        val thinkingIndex = currentSession.messages.size - 1
-        chatAdapter.notifyItemInserted(thinkingIndex)
-        scrollToBottom()
+        addMessageToChat(thinkingMsg)
 
         lifecycleScope.launch {
             val fullPrompt = generatePromptCore(
@@ -271,34 +267,26 @@ class ChatActivity : AppCompatActivity() {
 
             currentSession.finalPrompt = fullPrompt
 
-            // Remove thinking message
-            if (currentSession.messages.size > thinkingIndex && currentSession.messages[thinkingIndex].type == MessageType.BOT_GENERATING) {
-                currentSession.messages.removeAt(thinkingIndex)
-                chatAdapter.notifyItemRemoved(thinkingIndex)
+            // Remove thinking indicator
+            chatAdapter.removeLastIfGenerating()
+            if (currentSession.messages.isNotEmpty() && currentSession.messages.last().type == MessageType.BOT_GENERATING) {
+                currentSession.messages.removeAt(currentSession.messages.size - 1)
             }
 
-            // Add final prompt message
             val finalMsg = ChatMessage(
                 type = MessageType.BOT_FINAL_PROMPT,
                 text = fullPrompt,
                 selectedTechStack = currentSession.techStack,
                 promptContent = fullPrompt
             )
-            currentSession.messages.add(finalMsg)
-            chatAdapter.notifyItemInserted(currentSession.messages.size - 1)
-            scrollToBottom()
+            addMessageToChat(finalMsg)
 
-            // Bot follow-up prompt
-            delay(500)
+            delay(400)
             val followUpOffer = ChatMessage(
                 type = MessageType.BOT_TEXT,
                 text = "💡 **Your Master Prompt is ready!**\nTap **Copy Prompt** above and paste it into Claude 3.5, ChatGPT, or Cursor.\n\nNeed any adjustments? Just tell me in the chat (e.g. *'Add Firebase Push notification code'* or *'Make it single file HTML'*)."
             )
-            currentSession.messages.add(followUpOffer)
-            chatAdapter.notifyItemInserted(currentSession.messages.size - 1)
-            scrollToBottom()
-
-            saveSession()
+            addMessageToChat(followUpOffer)
         }
     }
 
@@ -330,7 +318,6 @@ Generate the complete master prompt.
             }
         }
 
-        // Offline Master Engine (Fast & reliable fallback)
         return OfflineMasterEngine.generateMasterPrompt(
             appIdea = idea,
             techStackId = stack.id,
@@ -342,10 +329,7 @@ Generate the complete master prompt.
 
     private fun handleFollowUpChat(userText: String) {
         val thinkingMsg = ChatMessage(type = MessageType.BOT_GENERATING, text = "Thinking...")
-        currentSession.messages.add(thinkingMsg)
-        val thinkingIndex = currentSession.messages.size - 1
-        chatAdapter.notifyItemInserted(thinkingIndex)
-        scrollToBottom()
+        addMessageToChat(thinkingMsg)
 
         lifecycleScope.launch {
             val provider = prefs.activeProvider
@@ -374,16 +358,13 @@ Provide a direct, complete, production-ready solution or prompt refinement for t
                 replyText = generateOfflineRefinement(userText)
             }
 
-            if (currentSession.messages.size > thinkingIndex && currentSession.messages[thinkingIndex].type == MessageType.BOT_GENERATING) {
-                currentSession.messages.removeAt(thinkingIndex)
-                chatAdapter.notifyItemRemoved(thinkingIndex)
+            chatAdapter.removeLastIfGenerating()
+            if (currentSession.messages.isNotEmpty() && currentSession.messages.last().type == MessageType.BOT_GENERATING) {
+                currentSession.messages.removeAt(currentSession.messages.size - 1)
             }
 
             val replyMsg = ChatMessage(type = MessageType.BOT_TEXT, text = replyText)
-            currentSession.messages.add(replyMsg)
-            chatAdapter.notifyItemInserted(currentSession.messages.size - 1)
-            scrollToBottom()
-            saveSession()
+            addMessageToChat(replyMsg)
         }
     }
 
@@ -411,9 +392,9 @@ You can copy the main prompt above and combine it with this instruction!
     }
 
     private fun scrollToBottom() {
-        if (currentSession.messages.isNotEmpty()) {
-            binding.rvChatMessages.post {
-                binding.rvChatMessages.smoothScrollToPosition(currentSession.messages.size - 1)
+        binding.rvChatMessages.post {
+            if (chatAdapter.itemCount > 0) {
+                binding.rvChatMessages.smoothScrollToPosition(chatAdapter.itemCount - 1)
             }
         }
     }
