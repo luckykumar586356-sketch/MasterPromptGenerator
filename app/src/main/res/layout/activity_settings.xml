@@ -53,7 +53,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="AI Generation Engine 🤖"
+                android:text="Choose AI Engine 🤖"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -68,7 +68,7 @@
                     android:id="@+id/rbOfflineMaster"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Built-in Offline Master Engine (Fast &amp; 100% Offline)"
+                    android:text="Built-in Offline Master Engine (100% Free &amp; Offline)"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
 
@@ -76,7 +76,7 @@
                     android:id="@+id/rbGroq"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Groq Console (Fast Llama 3.3 70B)"
+                    android:text="Groq Console (⚡ Recommended - 100% Free Tier)"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
 
@@ -84,15 +84,7 @@
                     android:id="@+id/rbGemini"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Google Gemini (AI Studio - Gemini 1.5 Flash)"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-
-                <RadioButton
-                    android:id="@+id/rbOpenAi"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="OpenAI (ChatGPT GPT-4o)"
+                    android:text="Google Gemini (Free Tier on Google AI Studio)"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
 
@@ -100,17 +92,75 @@
                     android:id="@+id/rbOpenRouter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="OpenRouter (Multi-Model Hub)"
+                    android:text="OpenRouter (Free &amp; Paid Models)"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+
+                <RadioButton
+                    android:id="@+id/rbOpenAi"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="OpenAI (ChatGPT GPT-4o - Paid Account)"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
             </RadioGroup>
+
+            <!-- Guide Card: "API Kahan Milega?" -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardApiGuide"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:id="@+id/tvGuideTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔑 API Key Kahan Milegi?"
+                        android:textColor="@color/primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvGuideContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="Groq Console par free API key lene ke liye niche diye gaye button par click karein."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpenApiKeyUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="10dp"
+                        android:backgroundTint="@color/secondary"
+                        android:text="🌐 Get Free API Key (Click to Open)"
+                        android:textAllCaps="false"
+                        android:textColor="@color/on_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
             <!-- API Configuration Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardApiConfig"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
                 app:cardBackgroundColor="@color/surface_card"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="2dp">
@@ -121,11 +171,12 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
+                    <!-- API Key Input -->
                     <TextView
                         android:id="@+id/tvApiKeyLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="API Key:"
+                        android:text="Paste API Key Here:"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -136,42 +187,102 @@
                         android:layout_height="46dp"
                         android:layout_marginTop="6dp"
                         android:background="@drawable/bg_rounded_card"
-                        android:hint="Paste your API key here"
+                        android:hint="Paste your API key here (gsk_... or AIzaSy...)"
                         android:inputType="textPassword"
                         android:paddingHorizontal="12dp"
                         android:textColor="@color/text_primary"
                         android:textColorHint="@color/text_muted"
                         android:textSize="13sp" />
 
+                    <!-- Model Selector Section -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Model Identifier:"
+                        android:layout_marginTop="14dp"
+                        android:text="Selected Model (Click to see Free &amp; Paid Models):"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <EditText
-                        android:id="@+id/etModelName"
+                    <!-- Clickable Model Selector Card -->
+                    <LinearLayout
+                        android:id="@+id/layoutSelectModelCard"
                         android:layout_width="match_parent"
-                        android:layout_height="46dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:background="@drawable/bg_rounded_card"
-                        android:hint="e.g. llama-3.3-70b-versatile"
-                        android:inputType="text"
-                        android:paddingHorizontal="12dp"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_muted"
-                        android:textSize="13sp" />
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="12dp">
 
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvCurrentModelDisplayName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Llama 3.3 70B Versatile"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13.5sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvCurrentModelId"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:text="llama-3.3-70b-versatile"
+                                android:textColor="@color/primary"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvCurrentModelTierBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="4dp"
+                            android:text="🟢 100% FREE"
+                            android:textColor="@color/accent"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginStart="8dp"
+                            android:src="@drawable/ic_code"
+                            app:tint="@color/primary" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnBrowseModels"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="42dp"
+                        android:layout_marginTop="8dp"
+                        android:text="📋 View All Free &amp; Paid Models"
+                        android:textAllCaps="false"
+                        android:textColor="@color/primary"
+                        android:textSize="12sp"
+                        app:cornerRadius="10dp" />
+
+                    <!-- Test Connection Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnTestConnection"
                         android:layout_width="match_parent"
                         android:layout_height="46dp"
                         android:layout_marginTop="14dp"
-                        android:backgroundTint="@color/secondary"
-                        android:text="Test Connection"
+                        android:backgroundTint="@color/primary"
+                        android:text="Test API Connection"
                         android:textAllCaps="false"
                         android:textColor="@color/on_primary"
                         android:textSize="13sp"
@@ -208,7 +319,7 @@
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 app:cardBackgroundColor="@color/surface_card"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="1dp">
@@ -222,7 +333,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Master Prompt Generator v1.0.0"
+                        android:text="Master Prompt Generator v1.0.2"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -231,7 +342,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Production-ready Kotlin Android application built following the AI App Development workflow by SUN LEY CODER."
+                        android:text="Inspired by SUN LEY CODER AI App Development series. Supports Groq, Google Gemini, OpenRouter, and Offline Master Engine."
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>

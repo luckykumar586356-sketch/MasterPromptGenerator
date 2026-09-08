@@ -49,8 +49,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.1
-          name: "Master Prompt Generator v1.0.1 (Interactive AI Chat Workflow)"
+          tag_name: v1.0.2
+          name: "Master Prompt Generator v1.0.2 (Free v1.0.1 (Interactive AI Chat Workflow) Paid Model Selector + API Guide)"
           body: |
             ## 🚀 Master Prompt Generator - Native Android Kotlin App (v1.0.0)
 
