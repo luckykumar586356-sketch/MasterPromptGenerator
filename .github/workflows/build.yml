@@ -1,0 +1,73 @@
+name: Build & Release Master Prompt Generator APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: "8.5"
+
+      - name: Build Debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Prepare APK
+        run: |
+          mkdir -p output_apk
+          cp app/build/outputs/apk/debug/app-debug.apk output_apk/MasterPromptGenerator.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MasterPromptGenerator-APK
+          path: output_apk/MasterPromptGenerator.apk
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.0
+          name: "Master Prompt Generator v1.0.0 (Production Release)"
+          body: |
+            ## 🚀 Master Prompt Generator - Native Android Kotlin App (v1.0.0)
+
+            Inspired by SUN LEY CODER's AI App Development Workflow.
+            
+            ### ✨ Features:
+            - 🎯 **Interactive Conversational Prompt Wizard**: Transforms rough app/game ideas into full production-grade AI prompts.
+            - 🛠️ **Multi-Tech Stack Selector**: Flutter, Kotlin Android (Compose/XML), React Native, Single File HTML/JS, Python, Swift, React/Next.js.
+            - 🧩 **Extensive Feature Matrix**: Authentication, Admin Panel, Payment Gateway, Push Notifications, Offline Local DB, AI/ML, Real-time WebSockets, Tournament Brackets & Fixtures, and more.
+            - 🧠 **Dual Generation Engines**:
+              - **Built-in Offline Master Engine**: Generates exhaustive architectural prompts with full file trees and step-by-step plans offline without any API key!
+              - **Cloud AI Engine**: Powered by Groq (Llama 3.3 70B), Google Gemini 1.5, OpenAI GPT-4o, and OpenRouter.
+            - 📋 **1-Tap Actions**: Copy with toast & haptic feedback, Direct Share Sheet, and Export to `.md` file.
+            - 💾 **Local History & Starred Vault**: Persists previous prompt generations.
+            - 🎨 **Modern Dark / Light Material 3 Design System**: Glowing accents, fluid animations, and native performance.
+          files: output_apk/MasterPromptGenerator.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
